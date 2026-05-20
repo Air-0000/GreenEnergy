@@ -1,0 +1,23 @@
+# 绿电+热电联产+加氢能源 多能互补系统依赖
+
+# 核心机器学习
+torch>=2.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# 可视化
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# API 调用（按需安装）
+anthropic>=0.25.0  # Claude API
+openai>=1.0.0  # OpenAI API
+requests>=2.31.0
+
+# 数据处理
+h5py>=3.10.0  # 读取 HDF5 格式数据
+
+# 其他
+jupyter>=1.0.0  # 交互式开发
+jupyterlab>=4.0.0
