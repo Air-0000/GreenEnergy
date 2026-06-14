@@ -1,130 +1,241 @@
-# 绿电+热电联产+加氢能源 多能互补协同调度系统
----
+# GreenEnergy — Multi-Energy Complementary Dispatch System
 
-## 📁 项目结构
-
-```
-workspace/GreenEnergy_PDCA/
-├── src/                        # 源代码
-│   ├── main.py                 # 主程序入口
-│   ├── data_loader.py         # 数据加载与预处理
-│   ├── lstm_model.py           # LSTM 预测模型
-│   ├── dispatcher.py           # 调度引擎
-│   ├── llm_analyst.py          # 大模型分析师
-│   └── evaluator.py            # 系统评估器
-├── data/                       # 数据目录
-│   ├── opsd_time_series.csv    # OPSD 欧洲电力数据集 (124MB)
-│   └── SOLETE/                 # SOLETE 丹麦风光数据集
-├── results/                    # 输出目录
-│   ├── wind_lstm.pth           # 风电 LSTM 模型
-│   ├── solar_lstm.pth          # 光伏 LSTM 模型
-│   ├── dispatch_overview.png    # 调度概览图
-│   ├── economics_carbon.png     # 经济碳排图
-│   ├── results.json            # 结果 JSON
-│   └── llm_analysis.txt        # 大模型分析结果
-├── models/                     # 模型存储目录
-├── reports/                    # 报告目录
-└── requirements.txt            # 依赖包
-```
+**GreenEnergy** is a comprehensive simulation and optimization system for coordinating **green electricity**, **hydrogen production**, and **combined heat and power (CHP)** in a multi-energy complementary microgrid. It combines LSTM-based time-series forecasting with a rule-based dispatch engine to maximize renewable energy utilization, minimize curtailment, and optimize economic and environmental outcomes.
 
 ---
 
-## 🚀 快速开始
+## Table of Contents
 
-### 1. 安装依赖
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Data Sources](#data-sources)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Module Reference](#module-reference)
+  - [Data Loader](#1-data-loader)
+  - [LSTM Predictor](#2-lstm-predictor)
+  - [Dispatch Engine](#3-dispatch-engine)
+  - [LLM Analyst](#4-llm-analyst)
+  - [System Evaluator](#5-system-evaluator)
+- [Configuration](#configuration)
+- [Outputs](#outputs)
+- [Technologies](#technologies)
+- [Future Work](#future-work)
+- [License](#license)
+
+---
+
+## Overview
+
+Modern energy systems face a critical challenge: how to efficiently integrate intermittent renewable sources (wind and solar) with flexible loads and storage. **GreenEnergy** tackles this by simulating a multi-energy system that:
+
+1. **Forecasts** wind and solar power generation using LSTM neural networks trained on real European power data.
+2. **Dispatches** green electricity according to a priority rule: **first to electrolytic hydrogen production, surplus to CHP**, with grid export as the final fallback.
+3. **Evaluates** system performance across energy efficiency, economic benefit, and carbon reduction metrics.
+4. **Analyzes** dispatch strategies using optional LLM integration (Claude / GPT) for intelligent commentary and suggestions.
+
+The system was originally developed as a course project for an Artificial Intelligence fundamentals course.
+
+---
+
+## Features
+
+- **LSTM Time-Series Forecasting** — Separate LSTM models (2-layer, 64 hidden units) for wind and solar power prediction with early stopping and dropout regularization.
+- **Rule-Based Dispatch Engine** — Prioritizes electrolytic hydrogen production, routes surplus to combined heat and power, and manages hydrogen storage as a buffer.
+- **Peak/Off-Peak Pricing** — Automatically adjusts dispatch economics based on time-of-use electricity prices.
+- **Carbon Accounting** — Computes CO₂ emission savings relative to conventional thermal generation.
+- **LLM Integration** — Optionally uses Claude or GPT APIs to produce natural-language strategy analysis and improvement recommendations. Falls back to a built-in local analysis when no API key is available.
+- **Visualization** — Generates comprehensive plots: power forecast timelines, dispatch allocation stack charts, hydrogen storage levels, hourly economic benefit, and carbon reduction.
+- **Structured Output** — Saves results as JSON, Markdown reports, and PNG figures for downstream consumption.
+
+---
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                   GreenEnergy System                              │
+│                                                                  │
+│  🌬️  Wind Forecast (LSTM) ──┐                                   │
+│  ☀️  Solar Forecast (LSTM) ──┼──▶ 🔋 Electrolyzer (H₂)          │
+│                              │         │                         │
+│                              │         ▼                         │
+│                              │    ⚡ CHP (Heat & Power)            │
+│                              │         │                         │
+│                              └──▶ 🔌 Grid Export / Import         │
+│                                       │                         │
+│                                       ▼                         │
+│                              💧 H₂ Storage Buffer                 │
+│                                       │                         │
+│                                       ▼                         │
+│                              📊 Evaluator                        │
+│                              └──▶ 📈 Reports & Plots             │
+│                              └──▶ 🤖 LLM Analysis (optional)     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Dispatch Priority Rules
+
+1. Green electricity is used **first** for electrolytic hydrogen production.
+2. Any remaining power is directed to **Combined Heat and Power (CHP)**.
+3. Any excess beyond both capacities is **exported to the grid**.
+4. The hydrogen storage tank acts as a buffer; overflow beyond capacity is recorded.
+5. Time-of-use pricing (peak 08:00–20:00, off-peak otherwise) influences economic calculations.
+
+---
+
+## Project Structure
+
+```
+GreenEnergy/
+├── src/                        # Source code
+│   ├── main.py                 # Main entry point: orchestrates the full pipeline
+│   ├── data_loader.py          # OPSD data loading, preprocessing, and feature engineering
+│   ├── lstm_model.py           # LSTM model definition and training/prediction wrapper
+│   ├── dispatcher.py           # Rule-based dispatch engine
+│   ├── llm_analyst.py          # LLM-based strategy analysis (Claude / GPT / fallback)
+│   └── evaluator.py            # System performance evaluation and visualization
+├── data/                       # Data directory (OPSD time-series CSV expected here)
+│   └── opsd_time_series.csv    # Open Power System Data (hourly, ~124 MB)
+│   └── SOLETE/                 # Optional SOLETE Danish wind/solar dataset
+├── results/                    # Output directory (generated at runtime)
+│   ├── wind_lstm.pth           # Trained wind LSTM model weights
+│   ├── solar_lstm.pth          # Trained solar LSTM model weights
+│   ├── dispatch_overview.png   # Combined power forecast + allocation + H₂ storage plot
+│   ├── economics_carbon.png    # Economic benefit and carbon reduction plot
+│   ├── results.json            # Structured evaluation results
+│   ├── llm_analysis.txt        # LLM-generated analysis (if configured)
+│   └── analysis_report.md      # Full analysis report
+├── models/                     # Additional model storage (optional)
+├── reports/                    # Additional reports (optional)
+└── requirements.txt            # Python dependencies
+```
+
+---
+
+## Data Sources
+
+### Primary: Open Power System Data (OPSD)
+
+- **Source**: [Open Power System Data](https://open-power-system-data.org/) — Time Series
+- **Range**: 2014-12-31 to 2020-09-30 (hourly resolution)
+- **Coverage**: 32 European countries; wind, solar, load, and price data
+- **File**: `data/opsd_time_series.csv` (~124 MB, not included in repo; must be downloaded separately)
+
+### Secondary: SOLETE Dataset (optional)
+
+Danish wind and solar data from the SOLETE project can be placed in `data/SOLETE/`.
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Python 3.9+
+- pip
+
+### Setup
 
 ```bash
-cd workspace/GreenEnergy_PDCA
+# Clone the repository
+git clone https://github.com/Air-0000/GreenEnergy.git
+cd GreenEnergy
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Download the OPSD dataset (required for training)
+# Place it at: data/opsd_time_series.csv
+# You can download from: https://data.open-power-system-data.org/time_series/
 ```
 
-依赖包括：
-- torch >= 2.0.0
-- numpy >= 1.24.0
-- pandas >= 2.0.0
-- scikit-learn >= 1.3.0
-- matplotlib >= 3.7.0
+### Dependencies
 
-### 2. 运行完整流程
+| Package       | Version   | Purpose                        |
+|---------------|-----------|--------------------------------|
+| torch         | ≥ 2.0.0   | LSTM model (PyTorch)           |
+| numpy         | ≥ 1.24.0  | Numerical computing            |
+| pandas        | ≥ 2.0.0   | Data manipulation              |
+| scikit-learn  | ≥ 1.3.0   | Scaling, metrics               |
+| matplotlib    | ≥ 3.7.0   | Plotting                       |
+| seaborn       | ≥ 0.12.0  | Statistical visualizations     |
+| anthropic     | ≥ 0.25.0  | Claude API (optional)          |
+| openai        | ≥ 1.0.0   | OpenAI API (optional)          |
+
+---
+
+## Quick Start
+
+### Run the full pipeline
 
 ```bash
-cd workspace/GreenEnergy_PDCA
-python3 src/main.py
+python src/main.py
+```
+
+This will:
+
+1. Load and preprocess the OPSD dataset.
+2. Train LSTM models for wind and solar power prediction.
+3. Generate 168-hour (one week) forecasts.
+4. Execute the rule-based dispatch engine.
+5. Evaluate system performance and produce visualizations.
+6. Optionally call an LLM for strategy analysis (if `OPENAI_API_KEY` or `CLAUDE_API_KEY` is set).
+7. Save all outputs to the `results/` directory.
+
+### Run individual modules
+
+```bash
+# Test the data loader
+python src/data_loader.py
+
+# Test the LSTM predictor
+python src/lstm_model.py
+
+# Test the dispatch engine
+python src/dispatcher.py
+
+# Test the LLM analyst (requires API key)
+python src/llm_analyst.py
+
+# Test the system evaluator
+python src/evaluator.py
 ```
 
 ---
 
-## 📋 完整流程说明
+## Module Reference
 
-### 流程图
+### 1. Data Loader
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    完整运行流程                                   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  [阶段1] 数据准备                                                │
-│  ├── 加载 OPSD 数据集 (50401条, 299列)                           │
-│  ├── 提取风电/光伏功率数据                                        │
-│  └── 创建时间序列滑动窗口 (lookback=24小时)                       │
-│                                                                  │
-│  [阶段2] LSTM 模型训练                                          │
-│  ├── 风电预测 LSTM (hidden_dim=64, layers=2)                     │
-│  ├── 光伏预测 LSTM (hidden_dim=64, layers=2)                    │
-│  ├── 早停机制 (patience=10)                                     │
-│  └── 保存模型到 results/                                        │
-│                                                                  │
-│  [阶段3] 预测与调度                                              │
-│  ├── 生成168小时预测 (一周数据)                                  │
-│  ├── 规则调度: 优先制氢 + 余电热电联产                            │
-│  └── 计算经济/环保指标                                           │
-│                                                                  │
-│  [阶段4] 大模型策略解读                                          │
-│  ├── 调用 Claude/GPT API (需配置 key)                           │
-│  └── 本地fallback模式 (无API时)                                 │
-│                                                                  │
-│  [阶段5] 系统评估                                                │
-│  ├── 计算能效/经济/环保指标                                       │
-│  ├── 生成可视化图表                                              │
-│  └── 输出评估报告                                                │
-│                                                                  │
-│  [阶段6] 生成报告                                                │
-│  ├── analysis_report.md (完整分析报告)                          │
-│  └── results.json (结构化结果)                                   │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🎯 各模块功能
-
-### 1. data_loader.py - 数据加载器
+`src/data_loader.py` — Loads, cleans, and prepares OPSD time-series data.
 
 ```python
 from data_loader import DataLoader
 
 loader = DataLoader('data/opsd_time_series.csv')
-loader.load_and_preprocess()
-loader.explore_data()
+loader.load_and_preprocess()          # Load CSV, extract wind/solar/load/price columns
+loader.explore_data()                 # Print summary statistics
 
-# 创建序列数据
+# Create sliding-window sequences
 X, y = loader.create_sequences(loader.wind_data, lookback=24)
-# X shape: (samples, 24, 1)
-# y shape: (samples,)
+# X shape: (samples, 24, 1) — past 24 hours
+# y shape: (samples,)       — next hour value
 ```
 
-**数据源**: Open Power System Data (OPSD)
-- 时间范围: 2014-12-31 至 2020-09-30
-- 采样间隔: 1小时
-- 包含: 32个欧洲国家的风电、光伏、负荷、电价数据
+- Automatically selects German data (most complete) by default.
+- Extracts columns matching wind/solar/load/price patterns.
+- Creates time-based features (hour, day, month, cyclical encodings) and lagged features.
 
-### 2. lstm_model.py - LSTM 预测模型
+### 2. LSTM Predictor
+
+`src/lstm_model.py` — Defines and trains an LSTM neural network for univariate time-series forecasting.
 
 ```python
 from lstm_model import LSTMPredictor
 
-# 创建预测器
 predictor = LSTMPredictor(
     name='Wind',
     input_dim=1,
@@ -133,217 +244,190 @@ predictor = LSTMPredictor(
     lookback=24
 )
 
-# 训练
+# Train with early stopping (patience=10)
 predictor.train(X, y, epochs=50)
 
-# 预测
+# Predict and evaluate
 predictions = predictor.predict(X_test)
-
-# 评估
 results = predictor.evaluate(X_test, y_test)
-# {'rmse': xxx, 'mae': xxx, 'mape': xxx}
+# {'rmse': ..., 'mae': ..., 'mape': ...}
 
-# 保存/加载模型
+# Save / load model weights
 predictor.save('results/wind_lstm.pth')
 predictor.load('results/wind_lstm.pth')
 ```
 
-**模型配置**:
-| 参数 | 值 | 说明 |
-|------|-----|------|
-| input_dim | 1 | 单变量输入 |
-| hidden_dim | 64 | 隐藏层维度 |
-| num_layers | 2 | LSTM层数 |
-| lookback | 24 | 历史窗口(小时) |
-| dropout | 0.2 | Dropout比率 |
-| optimizer | Adam | 优化器 |
-| lr | 0.001 | 学习率 |
+**Model Architecture**: 2-layer LSTM → FC(64→32) → FC(32→1) with ReLU activation and dropout (0.2).
 
-### 3. dispatcher.py - 调度引擎
+### 3. Dispatch Engine
+
+`src/dispatcher.py` — Rule-based energy dispatch optimization.
 
 ```python
 from dispatcher import DispatchEngine
 
 config = {
-    'electrolyzer_capacity': 500,    # 电解槽功率 (kW)
-    'electrolyzer_efficiency': 0.7,   # 制氢效率
-    'chp_capacity': 300,              # 热电联产功率 (kW)
-    'chp_heat_ratio': 0.4,            # 热电比
-    'h2_storage_capacity': 1000,      # 储氢容量 (kg)
-    'electricity_price_low': 0.3,     # 谷时电价
-    'electricity_price_high': 0.8,    # 峰时电价
+    'electrolyzer_capacity': 500,        # kW
+    'electrolyzer_efficiency': 0.7,      # kWh/kg H₂
+    'chp_capacity': 300,                 # kW
+    'chp_heat_ratio': 0.4,               # thermal:electric ratio
+    'h2_storage_capacity': 1000,         # kg
+    'electricity_price_low': 0.3,        # ¥/kWh (off-peak)
+    'electricity_price_high': 0.8,       # ¥/kWh (peak)
 }
 
 dispatcher = DispatchEngine(config)
 
-# 单次调度
-result = dispatcher.dispatch(wind_power=300, solar_power=200)
-# result: {'h2_produced': 714.29, 'carbon_savings': 400, ...}
+# Single-step dispatch
+result = dispatcher.dispatch(wind_power=300, solar_power=200, timestamp=...)
 
-# 批量调度
+# Batch simulation
 results = dispatcher.run_simulation(power_forecast_df)
 
-# 总结结果
+# Summarize results
 summary = dispatcher.summarize_results(results)
 ```
 
-**调度规则**:
-```
-1. 优先使用绿电进行电解制氢
-2. 过剩电力送往热电联产
-3. 储氢罐作为缓冲调节
-4. 峰谷电价联动调节 (8:00-20:00为峰时)
-```
+**Key dispatch outputs per time step**:
 
-### 4. llm_analyst.py - 大模型分析师
+| Output               | Unit    | Description                        |
+|----------------------|---------|------------------------------------|
+| electrolyzer_power   | kW      | Power to hydrogen production       |
+| h2_produced          | kg/h    | Hydrogen produced                  |
+| h2_storage_level     | kg      | Current hydrogen storage level     |
+| chp_power            | kW      | Power to CHP                       |
+| chp_heat             | kW      | Thermal output from CHP            |
+| grid_import / export | kW      | Grid power exchange                |
+| net_economic_benefit | ¥       | Net economic benefit               |
+| carbon_savings       | kg CO₂  | Estimated CO₂ reduction            |
+
+### 4. LLM Analyst
+
+`src/llm_analyst.py` — Optional large language model integration for strategy interpretation.
 
 ```python
 from llm_analyst import LLMAnalyst
 
-# 方式1: 使用环境变量
-# export OPENAI_API_KEY=sk-xxx 或 export CLAUDE_API_KEY=xxx
+# Using environment variable (OPENAI_API_KEY or CLAUDE_API_KEY)
+analyst = LLMAnalyst()
 
-# 方式2: 直接传入
-analyst = LLMAnalyst(api_key='your-api-key')
-
-# 分析调度场景
+# Analyze dispatch scenario
 analysis = analyst.analyze_scenario(scenario_summary)
 ```
 
-**无API时**: 自动降级为本地分析模式
+- Supports **Claude** (via Anthropic SDK) and **GPT** (via OpenAI API).
+- Falls back to a built-in **local analysis** if no API key is available.
+- Analysis dimensions: strategy evaluation, efficiency improvement suggestions, and upgrade roadmap.
 
-### 5. evaluator.py - 系统评估器
+### 5. System Evaluator
+
+`src/evaluator.py` — Comprehensive system performance assessment and visualization.
 
 ```python
 from evaluator import SystemEvaluator
 
 evaluator = SystemEvaluator('results')
-
 metrics = evaluator.evaluate(dispatch_results, wind_forecast, solar_forecast)
 ```
 
-**评估指标**:
+**Evaluation metrics**:
 
-| 类别 | 指标 | 说明 |
-|------|------|------|
-| 能效 | overall_efficiency | 系统综合能效 |
-| 能效 | self_use_rate | 绿电自用率 |
-| 能效 | curtailment_rate | 弃风弃光率 |
-| 生产 | h2_production | 绿氢产量(kg) |
-| 经济 | net_economic_benefit | 净经济效益(元) |
-| 环保 | carbon_savings | 碳减排量(kg CO2) |
-
----
-
-## 📊 输出文件说明
-
-### results/dispatch_overview.png
-三图合一：
-1. 风电/光伏功率预测时序图
-2. 功率调度分配堆叠图
-3. 储氢水平变化图
-
-### results/economics_carbon.png
-1. 每小时经济收益柱状图
-2. 碳减排量时序图
-
-### results/results.json
-```json
-{
-  "timestamp": "2026-05-20T...",
-  "wind_results": {"rmse": 69.45, "mae": 45.83},
-  "solar_results": {"rmse": 30.99, "mae": 18.19},
-  "metrics": {
-    "overall_efficiency": 1439.53,
-    "h2_production": 120000.00,
-    "carbon_savings": 106290.51,
-    ...
-  }
-}
-```
+| Category      | Metric               | Description                         |
+|---------------|----------------------|-------------------------------------|
+| Efficiency    | overall_efficiency   | System-level energy efficiency (%)  |
+| Efficiency    | self_use_rate        | Green power self-consumption rate   |
+| Efficiency    | curtailment_rate     | Curtailment rate (%)                |
+| Production    | h2_production        | Total hydrogen produced (kg)        |
+| Economic      | net_economic_benefit | Net economic benefit (¥)            |
+| Economic      | h2_revenue           | Hydrogen sales revenue (¥)          |
+| Environmental | carbon_savings       | CO₂ emission savings (kg CO₂)       |
 
 ---
 
-## 🔧 自定义配置
+## Configuration
 
-### 修改系统参数
-
-编辑 `src/main.py` 中的 `self.config`:
+System parameters can be customized by editing the `self.config` dictionary in `src/main.py`:
 
 ```python
 self.config = {
-    'electrolyzer_capacity': 1000,   # 增大电解槽
-    'electrolyzer_efficiency': 0.75, # 提升效率
-    'chp_capacity': 500,            # 增大热电联产
-    # ...
+    'electrolyzer_capacity': 500,          # kW
+    'electrolyzer_efficiency': 0.7,        # kWh/kg H₂
+    'chp_capacity': 300,                   # kW
+    'chp_heat_ratio': 0.4,                 # thermal:electric ratio
+    'chp_efficiency': 0.85,                # CHP electric efficiency
+    'h2_storage_capacity': 1000,           # kg
+    'h2_storage_level': 500,               # initial storage level (kg)
+    'electricity_price_low': 0.3,          # ¥/kWh (off-peak)
+    'electricity_price_high': 0.8,         # ¥/kWh (peak)
+    'lookback_window': 24,                 # hours of history for LSTM
+    'forecast_horizon': 24,                # hours ahead to forecast
 }
 ```
 
-### 修改模型参数
-
-```python
-# main.py 中
-self.wind_predictor = LSTMPredictor(
-    name='Wind',
-    input_dim=1,
-    hidden_dim=128,    # 增大隐藏层
-    num_layers=3,      # 增加层数
-    lookback=48        # 增加历史窗口
-)
-```
-
-### 添加新的气象特征
-
-修改 `src/data_loader.py` 的 `create_features()` 方法。
+Model hyperparameters (hidden dimension, number of layers, etc.) can also be adjusted when constructing `LSTMPredictor` instances in `main.py`.
 
 ---
 
-## ⚠️ 常见问题
+## Outputs
 
-### Q: 训练时间太长怎么办？
-A: 减少 epochs 或使用更小的数据集测试：
-```python
-predictor.train(X_small, y_small, epochs=10)
-```
+After running the pipeline, the `results/` directory contains:
 
-### Q: GPU 不被识别？
-A: 检查 PyTorch CUDA 安装：
-```python
-import torch
-print(torch.cuda.is_available())
-```
-
-### Q: 内存不足？
-A: 减小 batch_size：
-```python
-predictor.train(X, y, epochs=50, batch_size=32)  # 默认64
-```
+| File                     | Description                                          |
+|--------------------------|------------------------------------------------------|
+| `wind_lstm.pth`          | Trained wind LSTM checkpoint                         |
+| `solar_lstm.pth`         | Trained solar LSTM checkpoint                        |
+| `dispatch_overview.png`  | Three-panel plot: forecasts, allocation, H₂ storage  |
+| `economics_carbon.png`   | Two-panel plot: hourly revenue + carbon savings      |
+| `results.json`           | Structured JSON with all metrics                     |
+| `llm_analysis.txt`       | LLM strategy analysis (if API configured)            |
+| `analysis_report.md`     | Full formatted analysis report                       |
 
 ---
 
-## 📈 升级路线
+## Technologies
 
-```
-大作业(现在)          课程论文(1个月)        毕设(3个月)          发表(6个月)
-   │                     │                    │                    │
-   ▼                     ▼                    ▼                    ▼
-LSTM预测            强化学习(DQN/PPO)      多目标优化           多能流仿真+
-规则调度           替代简单调度           NSGA-II             灵敏度分析
-大模型解读          智能调度               不确定性处理         投核心期刊
-```
+- **Python** — Core language
+- **PyTorch** — LSTM neural network implementation
+- **scikit-learn** — Data preprocessing and evaluation metrics
+- **pandas / numpy** — Data manipulation and numerical computation
+- **matplotlib / seaborn** — Results visualization
+- **Anthropic / OpenAI APIs** — Optional LLM integration
 
 ---
 
-## 📝 报告结构模板
+## Future Work
 
-根据评分标准，报告应包含：
+The project includes several planned upgrade paths:
 
-1. **选题正确性 (15分)** - 绿电+热电联产+加氢能源 ✓
-2. **方法适当性 (20分)** - LSTM预测+规则调度 ✓
-3. **分析与实验设计 (40分)** - 需要详细展开
-4. **创新性 (15分)** - 多能互补协同 ✓
-5. **格式规范 (10分)** - 参照模板
+- **Short-term**: Upgrade to reinforcement learning dispatch (DQN / PPO).
+- **Medium-term**: Introduce multi-objective optimization (NSGA-II) for Pareto-optimal trade-offs between economic and environmental goals.
+- **Long-term**: Build a full thermal-electric-hydrogen multi-energy flow coupling model with sensitivity analysis.
+- Additional improvements: incorporate Transformer attention mechanisms for better forecasting, stochastic programming for uncertainty handling, and real-time data feeds.
 
 ---
 
-*本指南由 AI 生成 - 2026-05-20*
+## License
+
+This project was developed as an educational course project. No license is specified — please contact the author for usage terms.
+
+---
+
+## Topics / Tags
+
+Suggested GitHub topics for this repository:
+
+- `renewable-energy`
+- `hydrogen-production`
+- `lstm`
+- `time-series-forecasting`
+- `multi-energy-system`
+- `combined-heat-and-power`
+- `energy-dispatch`
+- `green-hydrogen`
+- `machine-learning`
+- `power-system-optimization`
+- `sustainable-energy`
+- `opsd`
+- `energy-management-system`
+- `deep-learning`
+- `carbon-emission-reduction`
