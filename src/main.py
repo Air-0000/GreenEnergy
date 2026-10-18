@@ -14,6 +14,9 @@ import os
 import sys
 import warnings
 warnings.filterwarnings('ignore')
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 # 导入各模块
 from data_loader import DataLoader
 from lstm_model import LSTMPredictor
@@ -387,4 +390,11 @@ GreenEnergy_PDCA/
             json.dump(results_json, f, indent=2, default=lambda x: x.tolist() if hasattr(x, 'tolist') else x)
 if __name__ == '__main__':
     # 配置路径
-    DATA_PATH = 'data/opsd_time_series.csv'
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DATA_PATH = os.path.join(base_dir, 'data', 'opsd_time_series.csv')
+    OUTPUT_DIR = os.path.join(base_dir, 'results')
+
+    print("启动绿电协同调度主程序...")
+    system = GreenEnergySystem(data_path=DATA_PATH, output_dir=OUTPUT_DIR)
+    system.initialize()
+    system.run()

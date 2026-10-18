@@ -2,6 +2,7 @@
 数据加载与预处理模块
 从 OPSD 数据集加载风电/光伏/电价数据，并进行预处理
 """
+import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -12,6 +13,10 @@ class DataLoader:
     """数据加载器"""
     def __init__(self, data_path):
         self.data_path = data_path
+        if not os.path.exists(self.data_path):
+            repo_data = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', os.path.basename(self.data_path))
+            if os.path.exists(repo_data):
+                self.data_path = repo_data
         self.df = None
         self.wind_data = None
         self.solar_data = None

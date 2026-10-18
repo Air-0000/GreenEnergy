@@ -94,6 +94,7 @@ class LSTMPredictor:
         patience_counter = 0
         early_stopped = False
         for epoch in range(epochs):
+            self.model.train()
             epoch_loss = 0
             for batch_X, batch_y in train_loader:
                 # 前向传播

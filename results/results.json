@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-10-19T02:32:05.071924",
+  "wind_results": {
+    "rmse": 453.9314846045736,
+    "mae": 363.77446751450054,
+    "mape": 6.269821335958565,
+    "mape_daytime": 6.269821335958565
+  },
+  "solar_results": {
+    "rmse": 432.63568469855335,
+    "mae": 238.42834812434228,
+    "mape": 14.233385405581048,
+    "mape_daytime": 14.233385405581048
+  },
+  "metrics": {
+    "overall_efficiency": 89.1,
+    "self_use_rate": 18.70617827210586,
+    "export_rate": 81.2938232421875,
+    "curtailment_rate": 0.0,
+    "h2_production": 5040.0,
+    "chp_heat_total": 56700.0,
+    "green_power_total": 1347148.5,
+    "green_power_used": 252000,
+    "grid_import_total": 0,
+    "grid_export_total": 1095148.5,
+    "total_revenue": 1044328.8,
+    "h2_revenue": 151200.0,
+    "heat_revenue": 17010.0,
+    "grid_export_revenue": 876118.8,
+    "total_cost": 15220.8,
+    "grid_import_cost": 0.0,
+    "operation_cost": 15120.0,
+    "depreciation_cost": 100.8,
+    "net_economic_benefit": 1029108.0,
+    "carbon_savings": 56637.0,
+    "h2_utilization": 92.70833333333334,
+    "electrolyzer_utilization": 100.0,
+    "chp_utilization": 0.0
+  },
+  "config": {
+    "electrolyzer_capacity": 1500,
+    "electrolyzer_efficiency": 50,
+    "waste_heat_ratio": 0.3,
+    "recovery_efficiency": 0.75,
+    "chp_capacity": 350,
+    "h2_storage_capacity": 3000,
+    "h2_storage_level": 1500,
+    "electricity_price_low": 0.3,
+    "electricity_price_high": 0.8,
+    "lookback_window": 24,
+    "forecast_horizon": 24
+  }
+}
